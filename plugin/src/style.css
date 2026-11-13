@@ -1,0 +1,105 @@
+:root {
+	--text: #1b1b1a;
+	--muted: #6b6a66;
+	--line: #d9d7d2;
+	--surface: #fff;
+	--focus: #2f5bea;
+	color-scheme: light;
+	font:
+		14px/1.4 system-ui,
+		sans-serif;
+	color: var(--text);
+}
+
+:root[data-theme='dark'] {
+	--text: #f1f0ec;
+	--muted: #a19f99;
+	--line: #3a3936;
+	--surface: #1f1f1d;
+	color-scheme: dark;
+}
+
+body {
+	margin: 0;
+	background: transparent;
+}
+
+.plugin {
+	display: grid;
+	gap: 12px;
+	padding: 2px;
+}
+
+.plugin[data-state='connecting'] .field,
+.plugin[data-state='standalone'] .field {
+	display: none;
+}
+
+.input {
+	box-sizing: border-box;
+	width: 100%;
+	padding: 8px 10px;
+	border: 1px solid var(--line);
+	border-radius: 6px;
+	background: var(--surface);
+	color: inherit;
+	font: inherit;
+}
+
+.input:focus-visible {
+	outline: 2px solid var(--focus);
+	outline-offset: 1px;
+}
+
+.address,
+.status {
+	margin: 4px 0 0;
+	color: var(--muted);
+	overflow-wrap: anywhere;
+}
+
+.code {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	align-items: flex-end;
+	margin: 0;
+}
+
+.code[hidden] {
+	display: none;
+}
+
+.preview {
+	width: 160px;
+	border: 1px solid var(--line);
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+.preview svg {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+
+.downloads {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.downloads button {
+	padding: 6px 12px;
+	border: 1px solid var(--line);
+	border-radius: 6px;
+	background: var(--surface);
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+}
+
+.downloads button:focus-visible {
+	outline: 2px solid var(--focus);
+	outline-offset: 1px;
+}

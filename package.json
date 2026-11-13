@@ -1,0 +1,22 @@
+{
+	"name": "content-plugin-qr",
+	"private": true,
+	"license": "MIT",
+	"type": "module",
+	"workspaces": [
+		"packages/*",
+		"plugin"
+	],
+	"scripts": {
+		"build": "npm run build --workspaces",
+		"test": "npm run test --workspaces --if-present",
+		"lint": "oxlint && oxfmt --check . && npm run types --workspaces",
+		"format": "oxfmt ."
+	},
+	"devDependencies": {
+		"oxfmt": "^0.78.0",
+		"oxlint": "^1.93.0",
+		"typescript": "^7.0.2",
+		"vitest": "^5.1.0"
+	}
+}

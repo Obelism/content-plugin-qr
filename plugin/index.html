@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>QR code</title>
+		<link rel="stylesheet" href="/src/style.css" />
+	</head>
+	<body>
+		<main class="plugin" data-state="connecting">
+			<p class="status" id="status" role="status">Connecting to Content…</p>
+			<div class="field">
+				<input
+					id="slug"
+					class="input"
+					type="text"
+					autocomplete="off"
+					spellcheck="false"
+					placeholder="spring-poster"
+					aria-describedby="address"
+				/>
+				<p class="address" id="address"></p>
+			</div>
+			<figure class="code" id="code" hidden>
+				<div class="preview" id="preview"></div>
+				<figcaption class="downloads">
+					<button type="button" data-format="svg">SVG</button>
+					<button type="button" data-format="png">PNG</button>
+					<button type="button" data-format="jpg">JPG</button>
+					<button type="button" data-format="pdf">PDF</button>
+				</figcaption>
+			</figure>
+		</main>
+		<script type="module" src="/src/main.ts"></script>
+	</body>
+</html>
