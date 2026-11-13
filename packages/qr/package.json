@@ -1,0 +1,62 @@
+{
+	"name": "@obelism/content-plugin-qr",
+	"description": "QR codes managed in Obelism Content: the content type, the code's address, and a Next.js route that logs each scan to Obelism Numbers and redirects",
+	"version": "0.1.0",
+	"license": "MIT",
+	"author": "Obelism <hello@obelism.studio> (https://www.obelism.studio)",
+	"keywords": [
+		"qr",
+		"qr-code",
+		"cms",
+		"obelism",
+		"nextjs"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Obelism/content-plugin-qr",
+		"directory": "packages/qr"
+	},
+	"type": "module",
+	"sideEffects": false,
+	"files": [
+		"dist"
+	],
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/index.d.ts",
+				"default": "./dist/index.js"
+			},
+			"require": {
+				"types": "./dist/index.d.cts",
+				"default": "./dist/index.cjs"
+			}
+		},
+		"./next": {
+			"import": {
+				"types": "./dist/next.d.ts",
+				"default": "./dist/next.js"
+			},
+			"require": {
+				"types": "./dist/next.d.cts",
+				"default": "./dist/next.cjs"
+			}
+		}
+	},
+	"scripts": {
+		"build": "bunchee",
+		"test": "vitest run",
+		"types": "tsc --noEmit"
+	},
+	"peerDependencies": {
+		"@obelism/content": ">=0.30.0"
+	},
+	"dependencies": {
+		"@obelism/numbers-sdk": "^0.5.0"
+	},
+	"devDependencies": {
+		"@obelism/content": "^0.30.0",
+		"@typescript/typescript6": "^6.0.2",
+		"bunchee": "^7.1.0"
+	}
+}

@@ -1,0 +1,22 @@
+{
+	"name": "content-plugin-qr-page",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build",
+		"test": "vitest run",
+		"types": "tsc --noEmit",
+		"deploy": "test -n \"$PLUGIN_URL\" || { echo \"Set PLUGIN_URL\" >&2; exit 1; }; npm run build && wrangler deploy"
+	},
+	"dependencies": {
+		"@obelism/content-plugin": "^0.1.0",
+		"qrcode-generator": "^2.0.4"
+	},
+	"devDependencies": {
+		"@types/node": "^26.6.6",
+		"jsqr": "^1.4.0",
+		"vite": "^8.3.8",
+		"wrangler": "^4.162.0"
+	}
+}

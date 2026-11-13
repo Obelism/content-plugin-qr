@@ -1,0 +1,11 @@
+# frame-ancestors allows any https page: Content frames this plugin, and in
+# site editing so does every customer's site around Content's frame. The page
+# holds nothing of its own to protect; what it may do goes through Content.
+/*
+  Content-Security-Policy: default-src 'self'; img-src 'self' data: blob:; style-src 'self'; connect-src 'self'; frame-ancestors https: http://localhost:*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+
+/manifest.json
+  Access-Control-Allow-Origin: *
+  Cache-Control: no-cache
