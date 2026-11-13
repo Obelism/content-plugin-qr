@@ -12,9 +12,10 @@ const address = element<HTMLParagraphElement>('address')
 const code = element<HTMLElement>('code')
 const preview = element<HTMLDivElement>('preview')
 
-// `?content=http://localhost:8789` builds against a local Content; nothing
-// but localhost may stand in for content.obelism.studio.
+// In `npm run dev`, `?content=http://localhost:8789` builds against a local
+// Content; nothing but localhost may stand in for content.obelism.studio.
 const contentOrigin = () => {
+	if (!import.meta.env.DEV) return CONTENT_ORIGIN
 	const asked = new URLSearchParams(location.search).get('content')
 	try {
 		const url = new URL(asked ?? '')
@@ -55,7 +56,11 @@ const render = (plugin: Plugin) => {
 	address.textContent = ''
 	root.dataset.state = 'ready'
 
-	if (typeof baseUrl !== 'string' || !URL.canParse(baseUrl)) {
+	if (
+		typeof baseUrl !== 'string' ||
+		!/^https?:\/\//.test(baseUrl) ||
+		!URL.canParse(baseUrl)
+	) {
 		return show(
 			'Set the site address for the QR code plugin in Settings › Preview and site › Plugins.',
 		)

@@ -60,21 +60,31 @@ export const GET = createQrRoute({
 })
 ```
 
-`numbers.token` is a Numbers API token of the environment, or a function
-that returns one, such as Vercel's OIDC token for a connected deployment.
+Use a delivery token, not a preview token: a preview token would send scans
+to draft targets. `numbers.token` is a Numbers API token of the environment,
+or a function that returns one, such as Vercel's OIDC token for a deployment
+connected to the Space with Improve on.
+
+Other options: `visitorCookie: false` (no visitor cookie, for a site that
+asks for consent first), `status` (`302`, `303` or `307`; never permanent,
+since a browser would keep it), `onError` (where a failed log is reported;
+`console.error` by default) and `contentType` (when the type's API ID is
+not `qrCode`).
 
 ### What a scan does
 
 1. Finds the published `qrCode` entry with that slug (a 404, or `fallback`,
    when there is none or it has no target).
-2. Sends a `qr_scan` event to Numbers, scoped to the slug, with the query
-   string, the target and the visitor's country in `params`, and UTM tags
-   from the query as the event's campaign. It waits at most 1.5 s
-   (`numbers.timeout`): a scan that can't be logged still redirects.
-   Link previews and crawlers aren't logged.
+2. Sends a `qr_scan` event to Numbers, scoped to the slug, with the code's
+   `query` field, the target and the visitor's country in `params`, and the
+   UTM tags in that query as the event's campaign. What a visitor appends
+   to the address is never logged. It waits at most 1.5 s
+   (`numbers.timeout`): a scan that can't be logged still redirects. Link
+   previews and crawlers aren't logged.
 3. Sets the shared visitor cookie (`obelism_visitor_id`) for a new visitor,
    so the scan and the pages after it are one visitor in Numbers and
-   Improve, and redirects (`302`, `status` to change it).
+   Improve, and redirects. The query isn't passed on to the target; put
+   what the target should get in the target link's own query.
 
 The scan is logged before the redirect because the target may be another
 site, where Numbers never sees the visitor arrive.
@@ -92,7 +102,8 @@ PLUGIN_URL=https://qr.example.com/ npm run deploy
 `PLUGIN_URL` is the `https` address the page is served from, outside
 `obelism.studio`; the build writes it into `manifest.json`. To build against
 a local Content, run `npm run dev` and point the plugin's URL in develop at
-`http://localhost:5173/?content=http://localhost:8789`.
+`http://localhost:5173/?content=http://localhost:8789` (only the dev server
+takes `?content=`).
 
 ## Develop
 

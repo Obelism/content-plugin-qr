@@ -16,7 +16,12 @@ export type QrRouteOptions = {
 	link?: LinkHrefOptions | undefined
 	// Where a code that doesn't exist, or has no target, goes; a 404 without.
 	fallback?: string | undefined
-	status?: 301 | 302 | 303 | 307 | 308 | undefined
+	// Never permanent: a browser would keep a cached 301 or 308, skipping
+	// the log and a changed target.
+	status?: 302 | 303 | 307 | undefined
+	// The shared visitor cookie for a new visitor, so the scan and the pages
+	// after it are one visitor; `false` without consent.
+	visitorCookie?: boolean | undefined
 	onError?: ((error: unknown) => void) | undefined
 	fetch?: typeof fetch | undefined
 }
@@ -70,19 +75,31 @@ export const createQrRoute = (options: QrRouteOptions) => {
 			report(error)
 			return notFound()
 		}
-		const href = linkHref(entry?.fields.target, options.link)
-		if (!href) return notFound()
-		const target = new URL(href, request.url).href
-
-		const visitor = scanVisitor(request)
-		if (options.numbers && !isBot(request.headers.get('user-agent') ?? '')) {
-			await logScan(
-				request,
-				{ slug, target, visitor },
-				options.numbers,
-				options.fetch,
-			).catch(report)
+		const href = entry && linkHref(entry.fields.target, options.link)
+		if (!entry || !href) return notFound()
+		const target = new URL(href, request.url)
+		// A target of only `#…`, or of this route, would send the scan back
+		// here.
+		const here = new URL(request.url)
+		if (target.origin === here.origin && target.pathname === here.pathname) {
+			return notFound()
 		}
-		return redirect(target, status, visitor.cookie)
+
+		if (!options.numbers || isBot(request.headers.get('user-agent') ?? '')) {
+			return redirect(target.href, status)
+		}
+		const visitor = scanVisitor(request, options.visitorCookie !== false)
+		await logScan(
+			request,
+			{
+				slug,
+				query: entry.fields.query || null,
+				target: target.href,
+				visitor,
+			},
+			options.numbers,
+			options.fetch,
+		).catch(report)
+		return redirect(target.href, status, visitor.cookie)
 	}
 }

@@ -7,7 +7,7 @@
 		"build": "vite build",
 		"test": "vitest run",
 		"types": "tsc --noEmit",
-		"deploy": "npm run build && wrangler deploy"
+		"deploy": "test -n \"$PLUGIN_URL\" || { echo \"Set PLUGIN_URL\" >&2; exit 1; }; npm run build && wrangler deploy"
 	},
 	"dependencies": {
 		"@obelism/content-plugin": "^0.1.0",

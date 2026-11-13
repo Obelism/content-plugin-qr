@@ -14,7 +14,7 @@ export type NumbersOptions = {
 	spaceId?: string | undefined
 	environment?: NumbersEnvironment | undefined
 	// A Numbers API token of the environment, or a host's OIDC token
-	// (Vercel's) from a connected deployment, sent without an Origin.
+	// (Vercel's) from a deployment connected with Improve on.
 	token: string | (() => string | Promise<string>)
 	endpoint?: string | undefined
 	// How long a scan may hold up the redirect, in milliseconds.
@@ -27,21 +27,32 @@ const VISITOR_COOKIE_DAYS = 30
 
 // Link previews and crawlers fetch the address too; they aren't scans.
 const BOT =
-	/bot|crawl|spider|slurp|preview|facebookexternalhit|embedly|headless|curl|wget/i
+	/bot|crawl|spider|slurp|preview|facebookexternalhit|whatsapp\/|embedly|headless|curl|wget/i
 export const isBot = (userAgent: string) => !userAgent || BOT.test(userAgent)
 
-const readCookie = (header: string | null, name: string) =>
-	header
-		?.split(/;\s*/)
-		.find((pair) => pair.split('=')[0] === name)
-		?.slice(name.length + 1) ?? ''
+// By code points: half a surrogate pair would make Numbers refuse the event.
+const clip = (value: string, max: number) =>
+	Array.from(value).slice(0, max).join('')
+
+const readCookie = (header: string | null, name: string) => {
+	const raw =
+		header
+			?.split(/;\s*/)
+			.find((pair) => pair.split('=')[0] === name)
+			?.slice(name.length + 1) ?? ''
+	try {
+		return decodeURIComponent(raw)
+	} catch {
+		return ''
+	}
+}
 
 // The visitor as the Numbers and Improve SDKs keep them, so a scan and the
-// pages after it are one visitor.
-export const scanVisitor = (request: Request) => {
+// pages after it are one visitor. `remember: false` sets no cookie.
+export const scanVisitor = (request: Request, remember = true) => {
 	const cookies = request.headers.get('cookie')
 	const stored = [VISITOR_COOKIE, LEGACY_VISITOR_COOKIE]
-		.map((name) => decodeURIComponent(readCookie(cookies, name)))
+		.map((name) => readCookie(cookies, name))
 		.find(isVisitorId)
 	if (stored) return { id: stored, recurring: true, cookie: null }
 	const id = createVisitorId()
@@ -49,7 +60,9 @@ export const scanVisitor = (request: Request) => {
 	return {
 		id,
 		recurring: false,
-		cookie: `${VISITOR_COOKIE}=${id}; Path=/; Max-Age=${VISITOR_COOKIE_DAYS * 86_400}; SameSite=Lax${secure}`,
+		cookie: remember
+			? `${VISITOR_COOKIE}=${id}; Path=/; Max-Age=${VISITOR_COOKIE_DAYS * 86_400}; SameSite=Lax${secure}`
+			: null,
 	}
 }
 
@@ -61,6 +74,9 @@ const UTM = {
 
 export type Scan = {
 	slug: string
+	// The code's own query field, not what the request carries: a visitor
+	// can append anything to an address.
+	query: string | null
 	target: string
 	visitor: { id: string; recurring: boolean }
 }
@@ -76,10 +92,11 @@ export const scanEvent = (
 	const country =
 		request.headers.get('x-vercel-ip-country') ??
 		request.headers.get('cf-ipcountry')
+	const codeQuery = new URLSearchParams(scan.query ?? '')
 	const utm = Object.fromEntries(
 		Object.entries(UTM).flatMap(([key, name]) => {
-			const value = url.searchParams.get(name)
-			return value ? [[key, value.slice(0, 256)]] : []
+			const value = codeQuery.get(name)
+			return value ? [[key, clip(value, 256)]] : []
 		}),
 	)
 	return {
@@ -98,33 +115,44 @@ export const scanEvent = (
 		scope: scan.slug,
 		params: {
 			slug: scan.slug,
-			query: url.search.slice(1, 1025) || null,
-			target: scan.target.slice(0, 1024),
+			query: scan.query ? clip(scan.query, 256) : null,
+			target: clip(scan.target, 1024),
 			// Numbers places events by the request's own country, which here
 			// is the server's.
-			...(country && { country }),
+			...(country && { country: clip(country, 8) }),
 		},
-		path: url.pathname.slice(0, 1024),
-		referrer: request.headers.get('referer')?.slice(0, 1024) ?? null,
+		path: clip(url.pathname, 1024),
+		referrer: request.headers.has('referer')
+			? clip(request.headers.get('referer')!.split(/[?#]/)[0]!, 1024)
+			: null,
 		...utm,
 	}
 }
 
-// Sends the scan to Numbers, waiting at most `timeout`: a scan that can't
-// be logged still redirects.
+// Sends the scan to Numbers, waiting at most `timeout`, the token included:
+// a scan that can't be logged still redirects.
 export const logScan = async (
 	request: Request,
 	scan: Scan,
 	numbers: NumbersOptions,
 	fetcher: typeof fetch = fetch,
 ) => {
+	const signal = AbortSignal.timeout(numbers.timeout ?? 1500)
+	const source = numbers.token
 	const token =
-		typeof numbers.token === 'function' ? await numbers.token() : numbers.token
+		typeof source === 'function'
+			? await new Promise<string>((resolve, reject) => {
+					signal.addEventListener('abort', () => reject(signal.reason), {
+						once: true,
+					})
+					Promise.resolve(source()).then(resolve, reject)
+				})
+			: source
 	const response = await fetcher(numbers.endpoint ?? DEFAULT_ENDPOINT, {
 		method: 'POST',
 		headers: { 'content-type': 'application/json', token },
 		body: JSON.stringify(scanEvent(request, scan, numbers)),
-		signal: AbortSignal.timeout(numbers.timeout ?? 1500),
+		signal,
 		cache: 'no-store',
 	})
 	if (!response.ok) {

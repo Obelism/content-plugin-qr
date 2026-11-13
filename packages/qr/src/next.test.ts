@@ -145,16 +145,72 @@ describe('createQrRoute', () => {
 		)
 	})
 
-	it('logs nothing for link previews or without numbers', async () => {
+	it('logs the code’s own query, not what a visitor appends', async () => {
+		const { scan, fetcher } = setup({
+			...entry(url('https://example.org/')),
+			fields: {
+				slug: 'spring',
+				query: 'src=poster&utm_campaign=spring',
+				target: url('https://example.org/'),
+			},
+		})
+		await scan('spring', {}, '?src=poster&utm_campaign=spring&email=a@b.c')
+		const body = JSON.parse(
+			(fetcher.mock.calls[0] as unknown as [string, RequestInit])[1]
+				.body as string,
+		)
+		expect(body.params.query).toBe('src=poster&utm_campaign=spring')
+		expect(body.utmCampaign).toBe('spring')
+		expect(JSON.stringify(body)).not.toContain('a@b.c')
+	})
+
+	it('logs nothing and sets no cookie for link previews or without numbers', async () => {
 		const preview = setup(entry(url('https://example.org/')))
-		await preview.scan('spring', {
-			headers: { 'user-agent': 'Slackbot-LinkExpanding 1.0' },
+		const previewed = await preview.scan('spring', {
+			headers: { 'user-agent': 'WhatsApp/2.23.20.0 A' },
 		})
 		expect(preview.fetcher).not.toHaveBeenCalled()
+		expect(previewed.headers.get('set-cookie')).toBeNull()
 
 		const off = setup(entry(url('https://example.org/')), { numbers: false })
-		expect((await off.scan('spring')).status).toBe(302)
+		const response = await off.scan('spring')
+		expect(response.status).toBe(302)
+		expect(response.headers.get('set-cookie')).toBeNull()
 		expect(off.fetcher).not.toHaveBeenCalled()
+	})
+
+	it('logs without a cookie when asked to', async () => {
+		const { scan, fetcher } = setup(entry(url('https://example.org/')), {
+			visitorCookie: false,
+		})
+		const response = await scan('spring')
+		expect(fetcher).toHaveBeenCalledTimes(1)
+		expect(response.headers.get('set-cookie')).toBeNull()
+	})
+
+	it('doesn’t redirect a code to itself', async () => {
+		for (const target of [
+			{ type: 'url', url: '', query: null, hash: 'top' },
+			url('/qr/spring?again=1'),
+		]) {
+			const { scan, fetcher } = setup(entry(target))
+			expect((await scan('spring')).status).toBe(404)
+			expect(fetcher).not.toHaveBeenCalled()
+		}
+	})
+
+	it('still redirects when the token never comes', async () => {
+		const { scan, onError } = setup(entry(url('https://example.org/')), {
+			numbers: {
+				organizationId: 'org_1',
+				token: () => new Promise(() => {}),
+				timeout: 20,
+			},
+		})
+		expect((await scan('spring')).headers.get('location')).toBe(
+			'https://example.org/',
+		)
+		expect(onError).toHaveBeenCalled()
 	})
 
 	it('answers 404, or the fallback, for unknown codes and bad slugs', async () => {
