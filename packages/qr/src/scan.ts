@@ -66,6 +66,8 @@ export const scanVisitor = (request: Request, remember = true) => {
 	}
 }
 
+const COUNTRY = /^(?:[A-Z]{2}|T1)$/
+
 const UTM = {
 	utmSource: 'utm_source',
 	utmMedium: 'utm_medium',
@@ -89,9 +91,12 @@ export const scanEvent = (
 ) => {
 	const url = new URL(request.url)
 	const device = detectDevice(request.headers.get('user-agent') ?? '')
-	const country =
+	const header = (
 		request.headers.get('x-vercel-ip-country') ??
 		request.headers.get('cf-ipcountry')
+	)?.toUpperCase()
+	const country = header && COUNTRY.test(header) ? header : null
+	const region = request.headers.get('x-vercel-ip-country-region')
 	const codeQuery = new URLSearchParams(scan.query ?? '')
 	const utm = Object.fromEntries(
 		Object.entries(UTM).flatMap(([key, name]) => {
@@ -117,15 +122,16 @@ export const scanEvent = (
 			slug: scan.slug,
 			query: scan.query ? clip(scan.query, 256) : null,
 			target: clip(scan.target, 1024),
-			// Numbers places events by the request's own country, which here
-			// is the server's.
-			...(country && { country: clip(country, 8) }),
 		},
 		path: clip(url.pathname, 1024),
 		referrer: request.headers.has('referer')
 			? clip(request.headers.get('referer')!.split(/[?#]/)[0]!, 1024)
 			: null,
 		...utm,
+		// The visitor's, not this server's: Numbers takes them from a request
+		// authorized by token.
+		...(country && { country }),
+		...(country && region && { region: clip(region, 256) }),
 	}
 }
 

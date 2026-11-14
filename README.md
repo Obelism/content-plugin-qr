@@ -76,8 +76,9 @@ not `qrCode`).
 1. Finds the published `qrCode` entry with that slug (a 404, or `fallback`,
    when there is none or it has no target).
 2. Sends a `qr_scan` event to Numbers, scoped to the slug, with the code's
-   `query` field, the target and the visitor's country in `params`, and the
-   UTM tags in that query as the event's campaign. What a visitor appends
+   `query` field and the target in `params`, the visitor's country and region
+   (from Vercel's or Cloudflare's headers), and the UTM tags in that query as
+   the event's campaign. What a visitor appends
    to the address is never logged. It waits at most 1.5 s
    (`numbers.timeout`): a scan that can't be logged still redirects. Link
    previews and crawlers aren't logged.
