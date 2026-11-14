@@ -201,6 +201,23 @@ describe('createQrRoute', () => {
 		expect(body).not.toHaveProperty('region')
 	})
 
+	it('sends a country as Numbers takes it: upper case, Tor as T1', async () => {
+		for (const [header, country] of [
+			['nl', 'NL'],
+			['T1', 'T1'],
+		]) {
+			const { scan, fetcher } = setup(entry(url('https://example.org/')))
+			await scan('spring', {
+				headers: { 'user-agent': IPHONE, 'cf-ipcountry': header! },
+			})
+			const body = JSON.parse(
+				(fetcher.mock.calls[0] as unknown as [string, RequestInit])[1]
+					.body as string,
+			)
+			expect(body.country).toBe(country)
+		}
+	})
+
 	it('logs without a cookie when asked to', async () => {
 		const { scan, fetcher } = setup(entry(url('https://example.org/')), {
 			visitorCookie: false,
