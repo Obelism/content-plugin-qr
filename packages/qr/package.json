@@ -1,7 +1,7 @@
 {
 	"name": "@obelism/content-plugin-qr",
 	"description": "QR codes managed in Obelism Content: the content type, the code's address, and a Next.js route that logs each scan to Obelism Numbers and redirects",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"license": "MIT",
 	"author": "Obelism <hello@obelism.studio> (https://www.obelism.studio)",
 	"keywords": [
