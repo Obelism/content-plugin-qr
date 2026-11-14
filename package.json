@@ -11,9 +11,13 @@
 		"build": "npm run build --workspaces",
 		"test": "npm run test --workspaces --if-present",
 		"lint": "oxlint && oxfmt --check . && npm run types --workspaces",
-		"format": "oxfmt ."
+		"format": "oxfmt .",
+		"changeset": "changeset",
+		"version": "changeset version && npm install --package-lock-only && oxfmt .",
+		"release": "npm run build -w packages/qr && npm run lint && npm test && changeset publish"
 	},
 	"devDependencies": {
+		"@changesets/cli": "^3.0.3",
 		"oxfmt": "^0.78.0",
 		"oxlint": "^1.93.0",
 		"typescript": "^7.0.2",

@@ -1,0 +1,37 @@
+name: NPM Publish
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    permissions:
+      contents: write
+      pull-requests: write
+      # npm trusted publishing (OIDC): no NPM_TOKEN. The package lists this
+      # repository and workflow as its trusted publisher on npmjs.com.
+      id-token: write
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # npm 11.5.1+ for trusted publishing.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24.x
+
+      - run: npm ci
+
+      - name: Create Release Pull Request or Publish to npm
+        uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2
+        with:
+          version-script: npm run version
+          publish-script: npm run release
