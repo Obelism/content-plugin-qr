@@ -40,7 +40,11 @@ const setup = (
 	const scan = (slug: string, init: RequestInit = {}, search = '?src=poster') =>
 		route(
 			new Request(`https://www.example.com/qr/${slug}${search}`, {
-				headers: { 'user-agent': IPHONE, 'x-vercel-ip-country': 'NL' },
+				headers: {
+					'user-agent': IPHONE,
+					'x-vercel-ip-country': 'NL',
+					'x-vercel-ip-country-region': 'NH',
+				},
 				...init,
 			}),
 			{ params: Promise.resolve({ slug }) },
@@ -95,8 +99,9 @@ describe('createQrRoute', () => {
 				slug: 'spring',
 				query: 'src=poster',
 				target: 'https://shop.example.org/spring',
-				country: 'NL',
 			},
+			country: 'NL',
+			region: 'NH',
 		})
 	})
 
@@ -177,6 +182,40 @@ describe('createQrRoute', () => {
 		expect(response.status).toBe(302)
 		expect(response.headers.get('set-cookie')).toBeNull()
 		expect(off.fetcher).not.toHaveBeenCalled()
+	})
+
+	it('leaves out a country Numbers would refuse, and a region without one', async () => {
+		const { scan, fetcher } = setup(entry(url('https://example.org/')))
+		await scan('spring', {
+			headers: {
+				'user-agent': IPHONE,
+				'cf-ipcountry': 'EU1',
+				'x-vercel-ip-country-region': 'NH',
+			},
+		})
+		const body = JSON.parse(
+			(fetcher.mock.calls[0] as unknown as [string, RequestInit])[1]
+				.body as string,
+		)
+		expect(body).not.toHaveProperty('country')
+		expect(body).not.toHaveProperty('region')
+	})
+
+	it('sends a country as Numbers takes it: upper case, Tor as T1', async () => {
+		for (const [header, country] of [
+			['nl', 'NL'],
+			['T1', 'T1'],
+		]) {
+			const { scan, fetcher } = setup(entry(url('https://example.org/')))
+			await scan('spring', {
+				headers: { 'user-agent': IPHONE, 'cf-ipcountry': header! },
+			})
+			const body = JSON.parse(
+				(fetcher.mock.calls[0] as unknown as [string, RequestInit])[1]
+					.body as string,
+			)
+			expect(body.country).toBe(country)
+		}
 	})
 
 	it('logs without a cookie when asked to', async () => {
