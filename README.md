@@ -114,4 +114,15 @@ npm run lint
 npm run build
 ```
 
+## Release
+
+`npm run changeset` describes a change to `@obelism/content-plugin-qr`. On
+`main`, the NPM Publish workflow opens a Version Packages pull request;
+merging it publishes the package through npm trusted publishing (no
+token). npm only takes a trusted publisher for a package that exists, so
+0.1.0 was published by hand (`npm publish --access public` in
+`packages/qr`), after which `Obelism/content-plugin-qr` with
+`publish-npm.yml` was added as its trusted publisher. The plugin page isn't published there: deploy it with
+`npm run deploy` in `plugin/`.
+
 MIT licensed.
